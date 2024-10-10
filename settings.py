@@ -3,14 +3,15 @@ import cv2
 
 WIDTH, HEIGHT = 800, 600
 
-## BARRIÄRER ##
+# Load the image
 image = cv2.imread('new_track.png')
-image = cv2.resize(image, (800, 600))
+image = cv2.resize(image, (WIDTH, HEIGHT))
+
+## BARRIÄRER ##
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
 # Apply Canny edge detection
 edges = cv2.Canny(gray, 50, 100)
-#cv2.imshow('edges', edges)
 
 # Extract contours with minimum length to prevent other lines except for the contours of the track to be selected
 contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -29,31 +30,33 @@ approx_contours_inner = np.squeeze(approx_contours_inner)
 BARRIERS = [approx_contours_outer, approx_contours_inner]
 
 ## CHECKPOINTS ## X1, Y1, X2, Y2
+# Nya checkpoints - Nu är det i rätt ordning (vänster-varv)
 CHECKPOINTS = np.array([[ 381, 450, 381, 540],
-                        [ 267, 450, 267, 540],
-                        [ 153, 450, 153, 540],
-                        [ 153, 450, 63, 450],
+                        [ 505, 447, 505, 537],
+                        [ 645, 447, 645 ,537],
+                        [ 645, 447, 735 ,447],
+                        [ 645, 300, 735 ,300],
+                        [ 645, 205, 645, 300],
+                        [ 505, 205, 505, 300],
+                        [ 365, 205, 365, 300],
+                        [ 269, 205, 365, 205],
+                        [ 269, 154, 365, 154],
+                        [ 267, 154, 267, 63],
+                        [ 153, 154, 153, 63],
                         [ 153, 154, 63, 154],
                         [ 153, 253, 63, 253],
                         [ 153, 339, 63, 339],
-                        [ 267, 154, 267, 63],
-                        [ 153, 154, 153, 63],
-                        [ 269, 154, 365, 154],
-                        [ 269, 205, 365, 205],
-                        [ 365, 205, 365, 300],
-                        [ 645, 205, 645, 300],
-                        [ 505, 205, 505, 300],
-                        [ 645, 300, 735 ,300],
-                        [ 645, 447, 735 ,447],
-                        [ 645, 447, 645 ,537],
-                        [ 505, 447, 505, 537],])
+                        [ 153, 445, 63, 445],
+                        [ 153, 450, 153, 540],
+                        [ 267, 450, 267, 540],
+                        ])
 
 x1 = CHECKPOINTS[:,0]
 y1 = CHECKPOINTS[:,1]
 x2 = CHECKPOINTS[:,2]
 y2 = CHECKPOINTS[:,3]
 
-CHECKPOINT_RADIUS = 30  # Adjust this value based on your game scale
+CHECKPOINT_RADIUS = 30  # Justera detta värde baserat på skalan
 
 # Correct midpoint calculation (average between the two points)
 mid_x = (x1 + x2) / 2
@@ -75,3 +78,26 @@ elif index == 0:
 INIT_POS = STARTING_POSITIONS[index]
 INIT_ANGLE = ANGLES[index]
 
+# -------------- Visualization --------------
+
+# Draw checkpoints
+for i, checkpoint in enumerate(CHECKPOINTS):
+    # Extract coordinates
+    x1, y1, x2, y2 = checkpoint
+
+    # Draw the checkpoint as a line
+    cv2.line(image, (x1, y1), (x2, y2), (0, 0, 255), 3)
+
+    # Draw a circle at the midpoint of the checkpoint
+    midpoint = ((x1 + x2) // 2, (y1 + y2) // 2)
+    cv2.circle(image, midpoint, 5, (0, 255, 0), -1)
+
+    # Put text showing the order number of the checkpoint
+    cv2.putText(image, f'{i+1}', (midpoint[0] - 10, midpoint[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+
+# Show the image with checkpoints
+cv2.imshow('Track with Checkpoints', image)
+
+# Wait for a key press and close the window
+cv2.waitKey(0)
+cv2.destroyAllWindows()

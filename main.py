@@ -10,7 +10,7 @@ import pickle
 def eval_genomes(genomes, config):
     for genome_id, genome in genomes:
         # Create the bus controlled by NEAT for this genome
-        bus = Bus(genome, config)  # Create the bus
+        bus = Bus(genome, config, random=False)  # Set random=True to enable random placement
 
         # Set up environment with this bus
         env = BusEnvironment(screen, bus)  # Pass the bus to the environment
@@ -46,6 +46,7 @@ def eval_genomes(genomes, config):
 
         # Assign the final score to the genome's fitness
         genome.fitness = score
+
 
 # Main function to run NEAT
 def run_neat(config_file):

@@ -16,11 +16,11 @@ class Bus():
         self.finished = False
         self.checkpoint_index = 0
         self.checkpoint_reward = 50
+        self.laps_completed = 0  # Track the number of completed laps
 
         # Initialize bus starting position and angle
         if random:
-            self.bus_start_pos = None
-            self.angle = None
+            self.get_start_pos_from_checkpoint()  # Use random checkpoint
         else:
             self.bus_start_pos = INIT_POS
             self.angle = INIT_ANGLE
@@ -48,10 +48,19 @@ class Bus():
         self.max_steering_angle = 30  # Max turning angle in degrees
 
     def get_start_pos_from_checkpoint(self):
-        index = np.random.randint(0, len(self.checkpoints))
+        """Sets the bus to a random checkpoint with correct angle to the next checkpoint."""
+        index = np.random.randint(0, len(self.checkpoints) - 1)
 
+        # Set the starting position
         self.bus_start_pos = STARTING_POSITIONS[index]
-        self.angle = INIT_ANGLE
+
+        # Calculate the angle to the next checkpoint
+        next_index = (index + 1) % len(self.checkpoints)
+        self.angle = ANGLES[index]
+
+        # Update checkpoint index so the bus knows which checkpoint is next
+        self.checkpoint_index = next_index
+
 
     def update(self):
         
@@ -89,7 +98,7 @@ class Bus():
 
     def draw(self, screen):
         # Rotate the bus image and draw it on the screen
-        rotated_image = pygame.transform.rotate(self.original_image, self.angle)
+        rotated_image = pygame.transform.rotate(self.original_image, -self.angle)
         rotated_rect = rotated_image.get_rect(center=self.rect.center)
         screen.blit(rotated_image, rotated_rect.topleft)
         
