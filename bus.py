@@ -224,17 +224,16 @@ class Bus():
         reward += 0.1  # Small constant reward for staying alive and moving
 
         # Penalize for speeding in school zones
-        if self.schoolzone[self.checkpoint_index] == 1 and self.velocity > 1:
-            reward -= 50
+        if self.schoolzone[self.checkpoint_index] == 1 and self.velocity > 2:
+            reward -= 100
 
         # Strong penalty for collisions
         if min(self.radar_distances) < 10:
             reward -= 100  # Strong penalty for collision
             self.has_collided = True
 
-            # Additional penalty if collision happens near a school zone
             if self.schoolzone[self.checkpoint_index] == 1:
-                reward -= 50  # Extra penalty for colliding in or near a school zone
+                reward -= 50  
 
         # Give a significant reward for passing checkpoints to encourage progress
         checkpoint_reward = self.check_for_checkpoints()
