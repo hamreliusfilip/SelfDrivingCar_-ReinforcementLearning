@@ -1,74 +1,96 @@
 import pygame
 import neat
 import pickle
-import numpy as np
 from settings import *
-from Enviroment import BusEnviroment
+from Enviroment import BusEnvironment
 from bus import Bus
 
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('Autonomous Bus - NEAT (Trained Model)')
-FONT = pygame.font.Font(None, 32)
+def draw_button(screen, text, x, y, width, height, inactive_color, active_color, font_size):
 
-MAX_STEPS = 500  # Set the maximum number of steps per simulation episode
+    pygame.draw.rect(screen, inactive_color, (x, y, width, height))
+    
+    font = pygame.font.Font(None, font_size)
+    text_surf = font.render(text, True, (0, 0, 0))
+    text_rect = text_surf.get_rect(center=((x + width // 2), (y + height // 2)))
+    screen.blit(text_surf, text_rect)
 
-def run_trained_genome(genome, config):
-    # Create the neural network from the loaded genome
-    net = neat.nn.FeedForwardNetwork.create(genome, config)
+def check_button(x, y, width, height, prev_click):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+    
+    if x + width > mouse[0] > x and y + height > mouse[1] > y:
+     
+        if click[0] == 1 and not prev_click:
+            return True, True  
+        elif click[0] == 0:
+            return False, False 
 
-    env = BusEnviroment(screen)
-    done = False
-    state = env.bus.get_radar_distances()
-    state = state / env.bus.radar_length  # Normalize the radar distances
+    return False, prev_click  
 
-    for step in range(MAX_STEPS):
-        if done:
-            break
-
-        # Activate the neural network based on the current state
-        actions = net.activate(state)
-
-        move_forward = actions[0] > 0.5  # Threshold for moving forward
-        turn_left = actions[1] > 0.5     # Threshold for turning left
-        turn_right = actions[2] > 0.5    # Threshold for turning right
-
-        env.bus.update_action(move_forward, turn_left, turn_right)
-
-        # Get the next state (normalized radar distances)
-        state = env.bus.get_radar_distances() / env.bus.radar_length
-
-        # Check if the bus collided with a wall
-        if env.bus.has_collided:
-            done = True
-
-        # Update and draw the environment
-        env.draw()
-        pygame.display.flip()
-
-        pygame.time.delay(50)  # Adjust speed of simulation by delaying frame update
-
-def load_and_run_model(config_file, genome_file):
-    # Load the configuration file used for training
+def run_saved_genome(genome_file, config_file):
     config = neat.config.Config(neat.DefaultGenome, neat.DefaultReproduction,
                                 neat.DefaultSpeciesSet, neat.DefaultStagnation,
                                 config_file)
 
-    # Load the trained genome from file
-    with open(genome_file, 'rb') as f:
-        winner_genome = pickle.load(f)
+    with open(genome_file, "rb") as f:
+        genome = pickle.load(f)
 
-    # Run the trained genome in the environment
-    run_trained_genome(winner_genome, config)
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    clock = pygame.time.Clock()
+    
+    running = True
+    simulating = True
 
-if __name__ == "__main__":
-    # Specify the config file and genome file (adjust paths as needed)
-    config_path = "./neat-config.txt"
-    genome_path = "./winner-genome.pkl"
+    bus = None
+    env = None
 
-    # Load and run the model
-    load_and_run_model(config_path, genome_path)
+    button_x = WIDTH - 150
+    button_y = HEIGHT - 50
+    button_x_pause = WIDTH - 300
+    button_y_pause = HEIGHT - 50
+    button_width = 130
+    button_height = 40
+    button_inactive_color = (255, 255, 255)
+    button_active_color = (255, 255, 255)
 
-    # Quit pygame when done
+    prev_click_quit = False
+    prev_click_pause = False
+
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        if simulating:
+            if bus is None or env is None:
+                bus = Bus(genome, config, random=False)
+                env = BusEnvironment(screen, bus)
+
+            env.draw()
+            bus.update()
+
+        draw_button(screen, 'Quit', button_x, button_y, button_width, button_height, button_inactive_color, button_active_color, 30)
+        quit_clicked, prev_click_quit = check_button(button_x, button_y, button_width, button_height, prev_click_quit)
+        if quit_clicked:
+            print("Quit button clicked!")
+            running = False
+
+        draw_button(screen, 'Pause', button_x_pause, button_y_pause, button_width, button_height, button_inactive_color, button_active_color, 30)
+        pause_clicked, prev_click_pause = check_button(button_x_pause, button_y_pause, button_width, button_height, prev_click_pause)
+        if pause_clicked:
+            print("Pause button clicked!")
+            simulating = not simulating  
+
+        pygame.display.flip()
+        clock.tick(60)
+
+if __name__ == '__main__':
+    pygame.init()
+    pygame.display.set_caption('Self Driving Bus')
+
+    config_path = 'neat-conf.txt'
+    genome_path = 'successful_genome_599.pkl'
+    
+    run_saved_genome(genome_path, config_path)
+
     pygame.quit()
-

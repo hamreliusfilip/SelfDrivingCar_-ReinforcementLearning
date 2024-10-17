@@ -2,11 +2,13 @@ import pygame
 import numpy as np
 from settings import *
 import neat
+import math
+
 class Bus():
     def __init__(self, genome, config, random=False):
         # Load and scale the bus image
         bus_image = pygame.image.load('bus.png')
-        self.original_image = pygame.transform.scale(bus_image, (50, 50))
+        self.original_image = pygame.transform.scale(bus_image, (55, 100))
         self.image = self.original_image  # This will hold the rotated image
         self.rect = self.image.get_rect()
         self.barriers = BARRIERS  # Barriers are contours (polygons)
@@ -32,11 +34,12 @@ class Bus():
         self.num_rays = 5
         self.radar_angles = np.linspace(90, -90, self.num_rays)
         self.net = neat.nn.FeedForwardNetwork.create(genome, config)
+        self.position = np.array(self.rect.center, dtype=np.float64)
 
         # Initialize radar distances
         self.radar_distances = self.get_radar_distances()
         # Movement attributes
-        self.velocity = 0  # Forward/Backward speed
+        self.velocity = 4  # Forward/Backward speed
         self.rotation_speed = 3  # Speed of turning
         self.max_velocity = 4  # Max speed limit
         self.acceleration = 0.1  # Acceleration rate
@@ -61,6 +64,7 @@ class Bus():
 
 
     def update(self):
+        
         action = self.decide_action()
         # Move based on the decided action
         if action == 0:  # Go straight
@@ -78,9 +82,11 @@ class Bus():
 
         # Update position
         self.radar_distances = self.get_radar_distances()
+        
         direction = pygame.math.Vector2(0, -1).rotate(self.angle)
-        self.rect.center += direction * self.velocity
-
+        self.position += np.array([direction.x, direction.y]) * self.velocity
+        
+        self.rect.center = self.position.astype(int)
 
     def decide_action(self):
         # Radar distances are the input for NEAT
@@ -90,8 +96,7 @@ class Bus():
         # Convert the output into a discrete action (0: go straight, 1: turn left, 2: turn right, 3: slow down)
         action = outputs.index(max(outputs))  # Choose the action with the highest output
         return action
-
-
+    
     def draw(self, screen):
         # Rotate the bus image and draw it on the screen
         rotated_image = pygame.transform.rotate(self.original_image, -self.angle)
@@ -112,8 +117,8 @@ class Bus():
             radar_end = center + np.array([ray_direction.x, ray_direction.y]) * self.radar_distances[i]
 
             # Draw radar line
-            pygame.draw.line(screen, (0, 255, 0), center, radar_end, 2)
-            pygame.draw.circle(screen, (0, 0, 255), radar_end, 5)
+            # pygame.draw.line(screen, (0, 255, 0), center, radar_end, 2)
+            # pygame.draw.circle(screen, (0, 0, 255), radar_end, 5)
 
 
     def get_radar_distances(self):
@@ -195,6 +200,7 @@ class Bus():
             self.checkpoint_index += 1  # Move to the next checkpoint
             return self.checkpoint_reward
         return 0
+
 
     def has_crossed_line(self, previous_position, current_position, line_start, line_end):
         """Check if a line between previous_position and current_position crosses the checkpoint line."""
