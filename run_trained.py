@@ -82,14 +82,14 @@ def run_saved_genome(genome_file, config_file):
             simulating = not simulating  
 
         pygame.display.flip()
-        clock.tick(60)
+        clock.tick(120)
 
 if __name__ == '__main__':
     pygame.init()
     pygame.display.set_caption('Self Driving Bus')
 
     config_path = 'neat-conf.txt'
-    genome_path = 'successful_genome_599.pkl'
+    genome_path = 'successful_genome_808.pkl'
     
     run_saved_genome(genome_path, config_path)
 
